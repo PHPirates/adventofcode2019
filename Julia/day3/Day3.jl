@@ -11,7 +11,11 @@ using Debugger
 struct Point
     x::Int
     y::Int
+    steps::Int
 end
+
+Base.hash(a::Point, h::UInt) = hash(a.y, hash(a.x, hash(:Point, h)))
+Base.isequal(a::Point, b::Point) = Base.isequal(hash(a), hash(b))
 
 mutable struct Turtle
     x::Int
@@ -24,42 +28,39 @@ function main(input::Array{String, 2})
    # Current point of drawing
    turtles = [Turtle(0, 0), Turtle(0, 0)]
 
-    for i = 1:size(input)[2]
-        for wire = 1:2
+   crossings = Set{Point}()
+
+    for wire = 1:2
+        steps = 0
+
+        for i = 1:size(input)[2]
             instruction = input[wire, i]
             direction = instruction[1]
             length = parse(Int, instruction[2:end])
 
             turtle = turtles[wire]
 
-            if direction == 'R'
-                for j = 1:length
-                    push!(points[wire], Point(turtle.x, turtle.y))
+            for j = 1:length
+                steps += 1
+                push!(points[wire], Point(turtle.x, turtle.y, steps))
+
+                if direction == 'R'
                     turtle.x += 1
-                end
-            elseif direction == 'L'
-                for j = 1:length
-                    push!(points[wire], Point(turtle.x, turtle.y))
+                elseif direction == 'L'
                     turtle.x -= 1
-                end
-            elseif direction == 'U'
-                for j = 1:length
-                    push!(points[wire], Point(turtle.x, turtle.y))
+                elseif direction == 'U'
                     turtle.y += 1
-                end
-            elseif direction == 'D'
-                for j = 1:length
-                    push!(points[wire], Point(turtle.x, turtle.y))
+                elseif direction == 'D'
                     turtle.y -= 1
+                else
+                    error("Incorrect direction found: ", direction)
                 end
-            else
-                error("Incorrect direction found: ", direction)
             end
         end
     end
 
     crossings = intersect(points[1], points[2])
-    delete!(crossings, Point(0, 0))
+    delete!(crossings, Point(0, 0, 0))
 
     closest = nothing
     for crossing in crossings
@@ -69,6 +70,7 @@ function main(input::Array{String, 2})
     end
 
     println(abs(closest.x) + abs(closest.y))
+
 end
 
 # main(["R8" "U5" "L5" "D3"; "U7" "R6" "D4" "L4"])
